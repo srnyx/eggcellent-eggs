@@ -4,10 +4,10 @@
         "version": "PTDL_v2",
         "update_url": null
     },
-    "exported_at": "2024-08-25T03:22:11+01:00",
-    "name": "Git-Gradle-Java Application",
+    "exported_at": "2024-08-25T08:17:59+01:00",
+    "name": "Git-Build-Java Application",
     "author": "srnyx@srnyx.com",
-    "description": "Egg for Java applications made by srnyx.com\r\n1. Pulls from Git\r\n2. Uses a Gradle wrapper to build\r\n3. Runs the application's JAR file",
+    "description": "Egg for Java applications made by srnyx.com\r\n1. Pulls from Git\r\n2. Uses a Gradle\/Maven wrapper to build\r\n3. Runs the application's JAR file",
     "features": null,
     "docker_images": {
         "Java 21": "ghcr.io\/pelican-eggs\/yolks:java_21",
@@ -18,7 +18,7 @@
         "Java 8": "ghcr.io\/pelican-eggs\/yolks:java_8"
     },
     "file_denylist": [],
-    "startup": "if [[ -d .git && \"{{PULL_START}}\" == \"1\" ]]; then GIT_OUTPUT=$(git pull); echo \"$GIT_OUTPUT\"; fi; if [[ \"{{BUILD_TRIGGER}}\" == \"Always\" || ! -e \"{{JAR_FILE}}\" || ( \"{{BUILD_TRIGGER}}\" == \"Git changes detected\" && \"$GIT_OUTPUT\" != \"Already up to date.\" ) ]]; then chmod +x gradlew; .\/gradlew build; else echo \"Skipping build\"; fi; FILE=\"{{JAR_FILE}}\"; if [[ -d \"{{JAR_FILE}}\" ]]; then FILE=$(find \"{{JAR_FILE}}\" -name \"*.jar\" | head -n 1); echo \"Found JAR file in {{JAR_FILE}}: $FILE\"; fi; java -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true -jar \"$FILE\";",
+    "startup": "if [[ -d .git && \"{{PULL_START}}\" == \"1\" ]]; then GIT_OUTPUT=$(git pull); echo \"$GIT_OUTPUT\"; fi; if [[ \"{{BUILD_TRIGGER}}\" == \"Always\" || ! -e \"{{JAR_FILE}}\" || ( \"{{BUILD_TRIGGER}}\" == \"Git changes detected\" && \"$GIT_OUTPUT\" != \"Already up to date.\" ) ]]; then TOOL={{BUILD_TOOL}}; if [[ \"$TOOL\" == \"Automatic\" ]]; then if [[ -f gradlew ]]; then TOOL=\"Gradle\"; elif [[ -f mvnw ]]; then TOOL=\"Maven\"; else echo -e \"No build tool detected (make sure your wrapper is set-up correctly)\"; exit 1; fi; fi; if [[ \"$TOOL\" == \"Gradle\" ]]; then echo \"Building with Gradle\"; chmod +x gradlew; .\/gradlew build; elif [[ \"$TOOL\" == \"Maven\" ]]; then echo \"Building with Maven\"; .\/mvnw clean package; fi; else echo \"Skipping build\"; fi; FILE=\"{{JAR_FILE}}\"; if [[ -d \"{{JAR_FILE}}\" ]]; then FILE=$(find \"{{JAR_FILE}}\" -name \"*.jar\" | head -n 1); echo \"Found JAR file in {{JAR_FILE}}: $FILE\"; fi; java -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true -jar \"$FILE\";",
     "config": {
         "files": "{}",
         "startup": "{\r\n    \"done\": [\r\n        \"has finished starting\"\r\n    ]\r\n}",
@@ -27,7 +27,7 @@
     },
     "scripts": {
         "installation": {
-            "script": "#!\/bin\/bash\r\n# Improved installation script to clone\/pull from git\r\n# Server Files: \/mnt\/server\r\napt update\r\napt install -y git curl jq file unzip make gcc g++ python python-dev libtool\r\nmkdir -p \/mnt\/server\r\ncd \/mnt\/server || exit\r\n\r\n# Skip cloning\/pulling if disabled\r\nif [ \"${CLONE_INSTALL}\" == \"0\" ]; then\r\n  echo -e \"Assuming user knows what they are doing, have a good day\"\r\n  exit 0\r\nfi\r\n\r\n# Add git ending if it's not on the address\r\nif [[ ${GIT_ADDRESS} != *.git ]]; then\r\n  GIT_ADDRESS=${GIT_ADDRESS}.git\r\nfi\r\n\r\n# Check for username and password (PAT)\r\nif [[ -z \"${USERNAME}\" && -z \"${PASSWORD}\" ]]; then\r\n  echo \"Using anonymous API call (no username\/password)\"\r\nelse\r\n  GIT_ADDRESS=\"https:\/\/${USERNAME}:${PASSWORD}@$(echo -e \"${GIT_ADDRESS}\" | cut -d\/ -f3-)\"\r\nfi\r\n\r\nif [ \"$(ls -A \/mnt\/server)\" ]; then\r\n  echo \"\/mnt\/server directory is NOT empty; checking for git files\"\r\n\r\n  # Check .git config\r\n  if [ -d .git ]; then\r\n    echo \".git directory exists\"\r\n    if [ -f .git\/config ]; then\r\n      echo \"Loading info from git config\"\r\n      ORIGIN=$(git config --get remote.origin.url)\r\n    else\r\n      echo \"Files found with no git config; closing out without touching things to not break anything\"\r\n      exit 10\r\n    fi\r\n  fi\r\n\r\n  # Pull from git\r\n  if [ \"${ORIGIN}\" == \"${GIT_ADDRESS}\" ]; then\r\n    echo \"Pulling latest from git\"\r\n    git pull\r\n  fi\r\nelse\r\n  echo \"\/mnt\/server IS empty; cloning files from repository\"\r\n\r\n  # Clone from git\r\n  if [ -z \"${BRANCH}\" ]; then\r\n    echo \"Cloning default branch\"\r\n    git clone \"${GIT_ADDRESS}\" .\r\n  else\r\n    echo \"Cloning ${BRANCH}\"\r\n    git clone --single-branch --branch \"${BRANCH}\" \"${GIT_ADDRESS}\" .\r\n  fi\r\nfi\r\n\r\necho \"Installation complete\"\r\nexit 0",
+            "script": "#!\/bin\/bash\r\n\r\n# Install dependencies\r\napt update\r\napt install -y git curl jq file unzip make gcc g++ libtool\r\n\r\n# Make server files directory (\/mnt\/server)\r\nmkdir -p \/mnt\/server\r\ncd \/mnt\/server || exit\r\n\r\n# Skip cloning\/pulling if disabled\r\nif [ \"${CLONE_INSTALL}\" == \"0\" ]; then\r\n  echo -e \"Assuming user knows what they are doing, have a good day\"\r\n  exit 0\r\nfi\r\n\r\n# Add git ending if it's not on the address\r\nif [[ ${GIT_ADDRESS} != *.git ]]; then\r\n  GIT_ADDRESS=${GIT_ADDRESS}.git\r\nfi\r\n\r\n# Check for username and password (PAT)\r\nif [[ -z \"${GIT_USERNAME}\" && -z \"${GIT_TOKEN}\" ]]; then\r\n  echo \"Using anonymous API call (no username\/password)\"\r\nelse\r\n  GIT_ADDRESS=\"https:\/\/${GIT_USERNAME}:${GIT_TOKEN}@$(echo -e \"${GIT_ADDRESS}\" | cut -d\/ -f3-)\"\r\nfi\r\n\r\nif [ \"$(ls -A \/mnt\/server)\" ]; then\r\n  echo \"\/mnt\/server directory is NOT empty; checking for git files\"\r\n\r\n  # Check .git config\r\n  if [ -d .git ]; then\r\n    echo \".git directory exists\"\r\n    if [ -f .git\/config ]; then\r\n      echo \"Loading info from git config\"\r\n      ORIGIN=$(git config --get remote.origin.url)\r\n    else\r\n      echo \"Files found with no git config; closing out without touching things to not break anything\"\r\n      exit 10\r\n    fi\r\n  fi\r\n\r\n  # Pull from git\r\n  if [ \"${ORIGIN}\" == \"${GIT_ADDRESS}\" ]; then\r\n    echo \"Pulling latest from git\"\r\n    git pull\r\n  fi\r\nelse\r\n  echo \"\/mnt\/server IS empty; cloning files from repository\"\r\n\r\n  # Clone from git\r\n  if [ -z \"${GIT_BRANCH}\" ]; then\r\n    echo \"Cloning default branch\"\r\n    git clone \"${GIT_ADDRESS}\" .\r\n  else\r\n    echo \"Cloning ${GIT_BRANCH}\"\r\n    git clone --single-branch --branch \"${GIT_BRANCH}\" \"${GIT_ADDRESS}\" .\r\n  fi\r\nfi\r\n\r\necho \"Installation complete\"\r\nexit 0",
             "container": "node:14-buster-slim",
             "entrypoint": "bash"
         }
@@ -51,6 +51,16 @@
             "user_viewable": true,
             "user_editable": true,
             "rules": "required|boolean",
+            "field_type": "text"
+        },
+        {
+            "name": "Build Tool",
+            "description": "The build tool to use to build the application (Automatic will try to detect)",
+            "env_variable": "BUILD_TOOL",
+            "default_value": "Automatic",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|in:Automatic,Gradle,Maven",
             "field_type": "text"
         },
         {

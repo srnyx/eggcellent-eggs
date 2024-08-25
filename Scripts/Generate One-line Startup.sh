@@ -31,9 +31,11 @@ STARTUP_CONTENT=$(<startup.sh); # Get startup.sh content
 # shellcheck disable=SC2001
 STARTUP_CONTENT=$(echo "$STARTUP_CONTENT" | sed 's/#.*//'); # Remove comments
 STARTUP_CONTENT=$(echo "$STARTUP_CONTENT" | tr '\n' ' ' | tr -s ' '); # Replace newlines with spaces and remove double spaces
+STARTUP_CONTENT=$(echo "$STARTUP_CONTENT" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//');
 
 # Return one-line startup script
-echo -e "\n${BOLD}One-line startup script:${GREEN}\n$STARTUP_CONTENT";
+echo -e "\n${BOLD}One-line startup script:${GREEN}";
+echo "$STARTUP_CONTENT";
 
 # Copy/exit once key is pressed
 echo -e "${RED}"

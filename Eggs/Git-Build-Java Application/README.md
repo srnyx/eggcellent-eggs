@@ -1,11 +1,15 @@
-# Git-Gradle-Java Application
+# Git-Build-Java Application
 
-This egg will clone a Git repository, build it with a Gradle wrapper, and then run it with Java
+This egg will clone a Git repository, build it with a Gradle/Maven wrapper, and then run it with Java
 
 ## Variables
 
 - **Clone On Install:** Whether to clone the repository on install or not
 - **Pull On Start:** Pull the latest files from git on startup
+- **Build Tool:** The build tool to use to build the application
+  - **Automatic:** Automatically detect the build tool based on server files
+  - **Gradle:** Use a Gradle wrapper to build the application
+  - **Maven:** Use a Maven wrapper to build the application
 - **Build Trigger:** When should the application be rebuilt on startup?
   - **Never:** Never rebuild the application
   - **Git changes detected:** Rebuild the application if changes are detected when pulling from git

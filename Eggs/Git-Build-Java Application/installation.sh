@@ -2,7 +2,7 @@
 
 # Install dependencies
 apt update
-apt install -y git curl jq file unzip make gcc g++ python python-dev libtool
+apt install -y git curl jq file unzip make gcc g++ libtool
 
 # Make server files directory (/mnt/server)
 mkdir -p /mnt/server

@@ -1,0 +1,117 @@
+{
+    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "exported_at": "2024-08-25T03:22:11+01:00",
+    "name": "Git-Gradle-Java Application",
+    "author": "srnyx@srnyx.com",
+    "description": "Egg for Java applications made by srnyx.com\r\n1. Pulls from Git\r\n2. Uses a Gradle wrapper to build\r\n3. Runs the application's JAR file",
+    "features": null,
+    "docker_images": {
+        "Java 21": "ghcr.io\/pelican-eggs\/yolks:java_21",
+        "Java 19": "ghcr.io\/pelican-eggs\/yolks:java_19",
+        "Java 17": "ghcr.io\/pelican-eggs\/yolks:java_17",
+        "Java 16": "ghcr.io\/pelican-eggs\/yolks:java_16",
+        "Java 11": "ghcr.io\/pelican-eggs\/yolks:java_11",
+        "Java 8": "ghcr.io\/pelican-eggs\/yolks:java_8"
+    },
+    "file_denylist": [],
+    "startup": "if [[ -d .git && \"{{PULL_START}}\" == \"1\" ]]; then GIT_OUTPUT=$(git pull); echo \"$GIT_OUTPUT\"; fi; if [[ \"{{BUILD_TRIGGER}}\" == \"Always\" || ! -e \"{{JAR_FILE}}\" || ( \"{{BUILD_TRIGGER}}\" == \"Git changes detected\" && \"$GIT_OUTPUT\" != \"Already up to date.\" ) ]]; then chmod +x gradlew; .\/gradlew build; else echo \"Skipping build\"; fi; FILE=\"{{JAR_FILE}}\"; if [[ -d \"{{JAR_FILE}}\" ]]; then FILE=$(find \"{{JAR_FILE}}\" -name \"*.jar\" | head -n 1); echo \"Found JAR file in {{JAR_FILE}}: $FILE\"; fi; java -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true -jar \"$FILE\";",
+    "config": {
+        "files": "{}",
+        "startup": "{\r\n    \"done\": [\r\n        \"has finished starting\"\r\n    ]\r\n}",
+        "logs": "{}",
+        "stop": "stop"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!\/bin\/bash\r\n# Improved installation script to clone\/pull from git\r\n# Server Files: \/mnt\/server\r\napt update\r\napt install -y git curl jq file unzip make gcc g++ python python-dev libtool\r\nmkdir -p \/mnt\/server\r\ncd \/mnt\/server || exit\r\n\r\n# Skip cloning\/pulling if disabled\r\nif [ \"${CLONE_INSTALL}\" == \"0\" ]; then\r\n  echo -e \"Assuming user knows what they are doing, have a good day\"\r\n  exit 0\r\nfi\r\n\r\n# Add git ending if it's not on the address\r\nif [[ ${GIT_ADDRESS} != *.git ]]; then\r\n  GIT_ADDRESS=${GIT_ADDRESS}.git\r\nfi\r\n\r\n# Check for username and password (PAT)\r\nif [[ -z \"${USERNAME}\" && -z \"${PASSWORD}\" ]]; then\r\n  echo \"Using anonymous API call (no username\/password)\"\r\nelse\r\n  GIT_ADDRESS=\"https:\/\/${USERNAME}:${PASSWORD}@$(echo -e \"${GIT_ADDRESS}\" | cut -d\/ -f3-)\"\r\nfi\r\n\r\nif [ \"$(ls -A \/mnt\/server)\" ]; then\r\n  echo \"\/mnt\/server directory is NOT empty; checking for git files\"\r\n\r\n  # Check .git config\r\n  if [ -d .git ]; then\r\n    echo \".git directory exists\"\r\n    if [ -f .git\/config ]; then\r\n      echo \"Loading info from git config\"\r\n      ORIGIN=$(git config --get remote.origin.url)\r\n    else\r\n      echo \"Files found with no git config; closing out without touching things to not break anything\"\r\n      exit 10\r\n    fi\r\n  fi\r\n\r\n  # Pull from git\r\n  if [ \"${ORIGIN}\" == \"${GIT_ADDRESS}\" ]; then\r\n    echo \"Pulling latest from git\"\r\n    git pull\r\n  fi\r\nelse\r\n  echo \"\/mnt\/server IS empty; cloning files from repository\"\r\n\r\n  # Clone from git\r\n  if [ -z \"${BRANCH}\" ]; then\r\n    echo \"Cloning default branch\"\r\n    git clone \"${GIT_ADDRESS}\" .\r\n  else\r\n    echo \"Cloning ${BRANCH}\"\r\n    git clone --single-branch --branch \"${BRANCH}\" \"${GIT_ADDRESS}\" .\r\n  fi\r\nfi\r\n\r\necho \"Installation complete\"\r\nexit 0",
+            "container": "node:14-buster-slim",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Clone On Install",
+            "description": "Whether to clone the repository on install or not",
+            "env_variable": "CLONE_INSTALL",
+            "default_value": "1",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean",
+            "field_type": "text"
+        },
+        {
+            "name": "Pull On Start",
+            "description": "Pull the latest files from git on startup",
+            "env_variable": "PULL_START",
+            "default_value": "1",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean",
+            "field_type": "text"
+        },
+        {
+            "name": "Build Trigger",
+            "description": "When should the application be rebuilt on startup?",
+            "env_variable": "BUILD_TRIGGER",
+            "default_value": "Git changes detected",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|in:Never,Git changes detected,Always",
+            "field_type": "text"
+        },
+        {
+            "name": "JAR File",
+            "description": "The file that starts the application (example: build\/libs\/App-1.0.0.jar) OR the directory the file is in (example: build\/libs)",
+            "env_variable": "JAR_FILE",
+            "default_value": "build\/libs",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Git Repo Address",
+            "description": "Git repository to clone\/pull (example: https:\/\/github.com\/srnyx\/srnyx-bot)",
+            "env_variable": "GIT_ADDRESS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Git Repo Branch",
+            "description": "The branch of the application to install from git. Leave empty for default",
+            "env_variable": "GIT_BRANCH",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Git Username",
+            "description": "Username to auth with git",
+            "env_variable": "GIT_USERNAME",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Git Access Token",
+            "description": "Access token to use with git (https:\/\/github.com\/settings\/tokens or https:\/\/gitlab.com\/-\/profile\/personal_access_tokens)",
+            "env_variable": "GIT_TOKEN",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        }
+    ]
+}

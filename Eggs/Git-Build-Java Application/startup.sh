@@ -15,7 +15,7 @@ if [[ "{{BUILD_TRIGGER}}" == "Always" || ! -e "{{JAR_FILE}}" || ( "{{BUILD_TRIGG
     elif [[ -f mvnw ]]; then
       TOOL="Maven";
     else
-      echo -e "No build tool detected (make sure your wrapper is set-up correctly)";
+      echo -e "\e[31mNo build tool detected (make sure your wrapper is set-up correctly)";
       exit 1;
     fi;
   fi;

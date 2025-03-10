@@ -26,4 +26,4 @@ if [[ -e "requirements.txt" ]]; then
 fi;
 
 # Start application
-py "$FILE";
+python "$FILE";

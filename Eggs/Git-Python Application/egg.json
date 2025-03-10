@@ -1,0 +1,109 @@
+{
+    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "exported_at": "2025-01-15T00:42:59+00:00",
+    "name": "Git-Python Application",
+    "author": "srnyx@srnyx.com",
+    "description": "Egg for Java applications made by srnyx.com\r\n1. Pulls from Git\r\n2. Installs requirements with PIP\r\n3. Runs the application's start file",
+    "features": null,
+    "docker_images": {
+        "Python 3.13": "ghcr.io\/pelican-eggs\/yolks:python_3.13",
+        "Python 3.12": "ghcr.io\/pelican-eggs\/yolks:python_3.12",
+        "Python 3.11": "ghcr.io\/pelican-eggs\/yolks:python_3.11",
+        "Python 3.10": "ghcr.io\/pelican-eggs\/yolks:python_3.10",
+        "Python 3.9": "ghcr.io\/pelican-eggs\/yolks:python_3.9",
+        "Python 3.8": "ghcr.io\/pelican-eggs\/yolks:python_3.8",
+        "Python 3.7": "ghcr.io\/pelican-eggs\/yolks:python_3.7",
+        "Python 2.7": "ghcr.io\/pelican-eggs\/yolks:python_2.7"
+    },
+    "file_denylist": [],
+    "startup": "if [[ -d .git && \"{{PULL_START}}\" == \"1\" ]]; then GIT_OUTPUT=$(git pull); echo \"$GIT_OUTPUT\"; fi; FILE=\"{{START_FILE}}\"; if [[ -d \"{{START_FILE}}\" ]]; then FILE=$(find \"{{START_FILE}}\" -name \"*.py\" | head -n 1); if [[ -n \"$FILE\" ]]; then echo \"Found start file in {{START_FILE}}: $FILE\"; fi; fi; if [[ ! -e \"$FILE\" ]]; then echo -e \"\\e[31mNo start file found!\"; exit 1; fi; if [[ -e \"requirements.txt\" ]]; then pip install -r requirements.txt; fi; python \"$FILE\";",
+    "config": {
+        "files": "{}",
+        "startup": "{\r\n    \"done\": [\r\n        \"has finished starting\"\r\n    ]\r\n}",
+        "logs": "{}",
+        "stop": "stop"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!\/bin\/bash\r\n\r\n# Install dependencies\r\napt update\r\napt install -y git curl jq file unzip make gcc g++ libtool\r\n\r\n# Make server files directory (\/mnt\/server)\r\nmkdir -p \/mnt\/server\r\ncd \/mnt\/server || exit\r\n\r\n# Skip cloning\/pulling if disabled\r\nif [ \"${CLONE_INSTALL}\" == \"0\" ]; then\r\n  echo -e \"Assuming user knows what they are doing, have a good day\"\r\n  exit 0\r\nfi\r\n\r\n# Add git ending if it's not on the address\r\nif [[ ${GIT_ADDRESS} != *.git ]]; then\r\n  GIT_ADDRESS=${GIT_ADDRESS}.git\r\nfi\r\n\r\n# Check for username and password (PAT)\r\nif [[ -z \"${GIT_USERNAME}\" && -z \"${GIT_TOKEN}\" ]]; then\r\n  echo \"Using anonymous API call (no username\/password)\"\r\nelse\r\n  GIT_ADDRESS=\"https:\/\/${GIT_USERNAME}:${GIT_TOKEN}@$(echo -e \"${GIT_ADDRESS}\" | cut -d\/ -f3-)\"\r\nfi\r\n\r\nif [ \"$(ls -A \/mnt\/server)\" ]; then\r\n  echo \"\/mnt\/server directory is NOT empty; checking for git files\"\r\n\r\n  # Check .git config\r\n  if [ -d .git ]; then\r\n    echo \".git directory exists\"\r\n    if [ -f .git\/config ]; then\r\n      echo \"Loading info from git config\"\r\n      ORIGIN=$(git config --get remote.origin.url)\r\n    else\r\n      echo \"Files found with no git config; closing out without touching things to not break anything\"\r\n      exit 10\r\n    fi\r\n  fi\r\n\r\n  # Pull from git\r\n  if [ \"${ORIGIN}\" == \"${GIT_ADDRESS}\" ]; then\r\n    echo \"Pulling latest from git\"\r\n    git pull\r\n  fi\r\nelse\r\n  echo \"\/mnt\/server IS empty; cloning files from repository\"\r\n\r\n  # Clone from git\r\n  if [ -z \"${GIT_BRANCH}\" ]; then\r\n    echo \"Cloning default branch\"\r\n    git clone \"${GIT_ADDRESS}\" .\r\n  else\r\n    echo \"Cloning ${GIT_BRANCH}\"\r\n    git clone --single-branch --branch \"${GIT_BRANCH}\" \"${GIT_ADDRESS}\" .\r\n  fi\r\nfi\r\n\r\necho \"Installation complete\"\r\nexit 0",
+            "container": "node:14-buster-slim",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Clone On Install",
+            "description": "Whether to clone the repository on install or not",
+            "env_variable": "CLONE_INSTALL",
+            "default_value": "1",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean",
+            "field_type": "text"
+        },
+        {
+            "name": "Pull On Start",
+            "description": "Pull the latest files from git on startup",
+            "env_variable": "PULL_START",
+            "default_value": "1",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean",
+            "field_type": "text"
+        },
+        {
+            "name": "Start File",
+            "description": "The file that starts the application (example: app\/main.py) OR the directory the file is in (example: app)",
+            "env_variable": "START_FILE",
+            "default_value": "main.py",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Git Repo Address",
+            "description": "Git repository to clone\/pull (example: https:\/\/github.com\/srnyx\/srnyx-bot)",
+            "env_variable": "GIT_ADDRESS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Git Repo Branch",
+            "description": "The branch of the application to install from git. Leave empty for default",
+            "env_variable": "GIT_BRANCH",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Git Username",
+            "description": "Username to auth with git",
+            "env_variable": "GIT_USERNAME",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Git Access Token",
+            "description": "Access token to use with git (https:\/\/github.com\/settings\/tokens or https:\/\/gitlab.com\/-\/profile\/personal_access_tokens)",
+            "env_variable": "GIT_TOKEN",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        }
+    ]
+}

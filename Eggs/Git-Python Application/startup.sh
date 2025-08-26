@@ -2,9 +2,15 @@
 if [[ -d .git && "{{PULL_START}}" == "1" ]]; then
   # Extract authentication from origin URL
   ORIGIN_URL=$(git config --get remote.origin.url);
-  ORIGIN_CREDENTIALS=$(echo "$ORIGIN_URL" | grep -oP '(?<=//)[^@]+' || echo "");
-  ORIGIN_USERNAME=$(echo "$ORIGIN_CREDENTIALS" | cut -d':' -f1 || echo "");
-  ORIGIN_PASSWORD=$(echo "$ORIGIN_CREDENTIALS" | cut -d':' -f2 || echo "");
+  if [[ "$ORIGIN_URL" =~ ^https?://([^/@]+:[^/@]+)@ ]]; then
+    ORIGIN_CREDENTIALS="${BASH_REMATCH[1]}";
+    ORIGIN_USERNAME="${ORIGIN_CREDENTIALS%%:*}";
+    ORIGIN_PASSWORD="${ORIGIN_CREDENTIALS#*:}";
+  else
+    ORIGIN_CREDENTIALS="";
+    ORIGIN_USERNAME="";
+    ORIGIN_PASSWORD="";
+  fi;
 
   # If origin URL doesn't have username/password but new ones are provided, add them
   if [[ ( "$ORIGIN_USERNAME" == "$ORIGIN_CREDENTIALS" || "$ORIGIN_PASSWORD" == "$ORIGIN_CREDENTIALS" ) && ( -n "{{GIT_USERNAME}}" || -n "{{GIT_TOKEN}}" ) ]]; then

@@ -4,7 +4,7 @@
         "version": "PTDL_v2",
         "update_url": null
     },
-    "exported_at": "2025-08-25T22:58:17+01:00",
+    "exported_at": "2025-08-26T04:40:48+01:00",
     "name": "Git-Build-Java Application",
     "author": "srnyx@srnyx.com",
     "description": "Egg for Java applications made by srnyx.com\r\n1. Pulls from Git\r\n2. Uses a Gradle\/Maven wrapper to build\r\n3. Runs the application's JAR file",
@@ -28,7 +28,7 @@
     },
     "scripts": {
         "installation": {
-            "script": "#!\/bin\/bash\r\nset -eu\r\n\r\n# Install dependencies\r\napt update\r\napt install -y git curl jq file unzip make gcc g++ libtool\r\n\r\n# Make server files directory (\/mnt\/server)\r\nmkdir -p \/mnt\/server\r\ncd \/mnt\/server || exit\r\n\r\n# Skip cloning\/pulling if disabled\r\nif [ \"${CLONE_INSTALL:-1}\" = \"0\" ]; then\r\n  echo -e \"Assuming user knows what they are doing, have a good day\"\r\n  exit 0\r\nfi\r\n\r\n# Add git ending if it's not on the address\r\nif [[ \"${GIT_ADDRESS}\" != *.git ]]; then\r\n  GIT_ADDRESS=\"${GIT_ADDRESS}.git\"\r\nfi\r\n\r\n# Check for username and password (PAT)\r\nif [[ -z \"${GIT_USERNAME:-}\" && -z \"${GIT_TOKEN:-}\" ]]; then\r\n  echo \"Using anonymous API call (no username\/password)\"\r\nelse\r\n  GIT_ADDRESS=\"https:\/\/${GIT_USERNAME}:${GIT_TOKEN}@$(echo -e \"${GIT_ADDRESS}\" | cut -d\/ -f3-)\"\r\nfi\r\n\r\n# Trust \/mnt\/server for git operations if not already trusted\r\nif ! git config --global --get-all safe.directory | grep -qx \"\/mnt\/server\"; then\r\n  git config --global --add safe.directory \/mnt\/server\r\nfi\r\n\r\nif [ \"$(ls -A \/mnt\/server)\" ]; then\r\n  echo \"\/mnt\/server directory is NOT empty; checking for git files\"\r\n\r\n  # Check .git config\r\n  if [ -d .git ]; then\r\n    echo \".git directory exists\"\r\n    if [ -f .git\/config ]; then\r\n      echo \"Loading info from git config\"\r\n      ORIGIN=$(git config --get remote.origin.url)\r\n      CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)\r\n    else\r\n      echo \"Files found with no git config; closing out without touching things to not break anything\"\r\n      exit 10\r\n    fi\r\n  fi\r\n\r\n  # Check branches\r\n  if [ -n \"${GIT_BRANCH:-}\" ] && [ \"${CURRENT_BRANCH}\" != \"${GIT_BRANCH}\" ]; then\r\n    echo \"Switching from ${CURRENT_BRANCH} to ${GIT_BRANCH}\"\r\n    git fetch origin \"${GIT_BRANCH}:${GIT_BRANCH}\"\r\n    git checkout \"${GIT_BRANCH}\"\r\n    git branch --set-upstream-to=\"origin\/${GIT_BRANCH}\" \"${GIT_BRANCH}\"\r\n  elif [ \"${ORIGIN}\" = \"${GIT_ADDRESS}\" ]; then\r\n    echo \"Pulling latest from git\"\r\n    git pull\r\n  fi\r\nelse\r\n  echo \"\/mnt\/server IS empty; cloning files from repository\"\r\n\r\n  # Clone from git\r\n  if [ -z \"${GIT_BRANCH:-}\" ]; then\r\n    echo \"Cloning default branch\"\r\n    git clone \"${GIT_ADDRESS}\" .\r\n  else\r\n    echo \"Cloning ${GIT_BRANCH}\"\r\n    git clone --single-branch --branch \"${GIT_BRANCH}\" \"${GIT_ADDRESS}\" .\r\n  fi\r\nfi\r\n\r\necho \"Installation complete\"\r\nexit 0",
+            "script": "#!\/bin\/bash\r\nset -eu\r\n\r\n# Install dependencies\r\napt update\r\napt install -y git curl jq file unzip make gcc g++ libtool\r\n\r\n# Make server files directory (\/mnt\/server)\r\nmkdir -p \/mnt\/server\r\ncd \/mnt\/server || exit\r\n\r\n# Skip cloning\/pulling if disabled\r\nif [ \"${CLONE_INSTALL:-1}\" = \"0\" ]; then\r\n  echo -e \"Assuming user knows what they are doing, have a good day\"\r\n  exit 0\r\nfi\r\n\r\n# Add git ending if it's not on the address\r\nif [[ \"${GIT_ADDRESS}\" != *.git ]]; then\r\n  GIT_ADDRESS=\"${GIT_ADDRESS}.git\"\r\nfi\r\n\r\n# Check for username and password (PAT)\r\nif [[ -z \"${GIT_USERNAME:-}\" && -z \"${GIT_TOKEN:-}\" ]]; then\r\n  echo \"Using anonymous API call (no username\/password)\"\r\nelse\r\n  GIT_ADDRESS=\"https:\/\/${GIT_USERNAME}:${GIT_TOKEN}@$(echo -e \"${GIT_ADDRESS}\" | cut -d\/ -f3-)\"\r\nfi\r\n\r\n# Trust \/mnt\/server for git operations if not already trusted\r\nif ! git config --global --get-all safe.directory | grep -qx \"\/mnt\/server\"; then\r\n  git config --global --add safe.directory \/mnt\/server\r\nfi\r\n\r\nif [ \"$(ls -A \/mnt\/server)\" ]; then\r\n  echo \"\/mnt\/server directory is NOT empty; checking for git files\"\r\n\r\n  # Check .git config\r\n  if [ -d .git ]; then\r\n    echo \".git directory exists\"\r\n    if [ -f .git\/config ]; then\r\n      echo \"Loading info from git config\"\r\n      ORIGIN=$(git config --get remote.origin.url)\r\n      CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)\r\n    else\r\n      echo \"Files found with no git config; closing out without touching things to not break anything\"\r\n      exit 10\r\n    fi\r\n  fi\r\n\r\n  # Check branches\r\n  echo \"Current branch is ${CURRENT_BRANCH} while the target branch is ${GIT_BRANCH:-DEFAULT}\"\r\n  if [ -n \"${GIT_BRANCH:-}\" ] && [ \"${CURRENT_BRANCH}\" != \"${GIT_BRANCH}\" ]; then\r\n    echo \"Switching from ${CURRENT_BRANCH} to ${GIT_BRANCH}\"\r\n    git fetch origin\r\n    git switch -C \"${GIT_BRANCH}\"\r\n    git reset --hard \"origin\/${GIT_BRANCH}\"\r\n  elif [ \"${ORIGIN}\" = \"${GIT_ADDRESS}\" ]; then\r\n    echo \"Pulling latest from git\"\r\n    git pull\r\n  fi\r\nelse\r\n  echo \"\/mnt\/server IS empty; cloning files from repository\"\r\n\r\n  # Clone from git\r\n  if [ -z \"${GIT_BRANCH:-}\" ]; then\r\n    echo \"Cloning default branch\"\r\n    git clone \"${GIT_ADDRESS}\" .\r\n  else\r\n    echo \"Cloning ${GIT_BRANCH}\"\r\n    git clone --single-branch --branch \"${GIT_BRANCH}\" \"${GIT_ADDRESS}\" .\r\n  fi\r\nfi\r\n\r\necho \"Installation complete\"\r\nexit 0",
             "container": "node:20-bookworm-slim",
             "entrypoint": "bash"
         }
@@ -52,16 +52,6 @@
             "user_viewable": true,
             "user_editable": true,
             "rules": "required|boolean",
-            "field_type": "text"
-        },
-        {
-            "name": "Build Tool",
-            "description": "The build tool to use to build the application (Automatic will try to detect)",
-            "env_variable": "BUILD_TOOL",
-            "default_value": "Automatic",
-            "user_viewable": true,
-            "user_editable": true,
-            "rules": "required|in:Automatic,Gradle,Maven",
             "field_type": "text"
         },
         {
@@ -122,6 +112,16 @@
             "user_viewable": true,
             "user_editable": true,
             "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Build Tool",
+            "description": "The build tool to use to build the application (Automatic will try to detect)",
+            "env_variable": "BUILD_TOOL",
+            "default_value": "Automatic",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|in:Automatic,Gradle,Maven",
             "field_type": "text"
         }
     ]

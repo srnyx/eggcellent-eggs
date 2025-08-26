@@ -49,11 +49,12 @@ if [ "$(ls -A /mnt/server)" ]; then
   fi
 
   # Check branches
+  echo "Current branch is ${CURRENT_BRANCH} while the target branch is ${GIT_BRANCH:-DEFAULT}"
   if [ -n "${GIT_BRANCH:-}" ] && [ "${CURRENT_BRANCH}" != "${GIT_BRANCH}" ]; then
     echo "Switching from ${CURRENT_BRANCH} to ${GIT_BRANCH}"
-    git fetch origin "${GIT_BRANCH}:${GIT_BRANCH}"
-    git checkout "${GIT_BRANCH}"
-    git branch --set-upstream-to="origin/${GIT_BRANCH}" "${GIT_BRANCH}"
+    git fetch origin
+    git switch -C "${GIT_BRANCH}"
+    git reset --hard "origin/${GIT_BRANCH}"
   elif [ "${ORIGIN}" = "${GIT_ADDRESS}" ]; then
     echo "Pulling latest from git"
     git pull

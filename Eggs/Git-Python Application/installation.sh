@@ -53,8 +53,13 @@ if [ "$(ls -A /mnt/server)" ]; then
   if [ -n "${GIT_BRANCH:-}" ] && [ "${CURRENT_BRANCH}" != "${GIT_BRANCH}" ]; then
     echo "Switching from ${CURRENT_BRANCH} to ${GIT_BRANCH}"
     git fetch origin
-    git switch -C "${GIT_BRANCH}"
+    
+    # Switch or create branch and ensure it tracks the remote
+    git switch -C "${GIT_BRANCH}" "origin/${GIT_BRANCH}"
     git reset --hard "origin/${GIT_BRANCH}"
+    
+    # Set upstream so future git pull works without extra flags
+    git branch --set-upstream-to="origin/${GIT_BRANCH}" "${GIT_BRANCH}" 2>/dev/null || true
   elif [ "${ORIGIN}" = "${GIT_ADDRESS}" ]; then
     echo "Pulling latest from git"
     git pull
@@ -68,7 +73,7 @@ else
     git clone "${GIT_ADDRESS}" .
   else
     echo "Cloning ${GIT_BRANCH}"
-    git clone --single-branch --branch "${GIT_BRANCH}" "${GIT_ADDRESS}" .
+    git clone --branch "${GIT_BRANCH}" "${GIT_ADDRESS}" .
   fi
 fi
 

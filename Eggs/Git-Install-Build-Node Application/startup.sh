@@ -2,6 +2,7 @@ set -e;
 export NODE_ENV=production;
 export HOST=0.0.0.0;
 export PORT={{SERVER_PORT}};
+export CI=true;
 corepack enable >/dev/null 2>&1 || true;
 
 # Pull from git if enabled
@@ -43,7 +44,7 @@ if [[ ! -d node_modules ]]; then
 fi;
 
 # Build application
-if [[ -e "{{BUILD_SCRIPT}}" && ( "{{BUILD_TRIGGER}}" == "Always" || ( "{{BUILD_TRIGGER}}" == "Git changes detected" && "$GIT_OUTPUT" != "Already up to date." ) ) ]]; then
+if [[ -n "{{BUILD_SCRIPT}}" && ( "{{BUILD_TRIGGER}}" == "Always" || ( "{{BUILD_TRIGGER}}" == "Git changes detected" && "$GIT_OUTPUT" != "Already up to date." ) ) ]]; then
   echo "Building application...";
   {{PACKAGE_MANAGER}} run "{{BUILD_SCRIPT}}";
 fi;

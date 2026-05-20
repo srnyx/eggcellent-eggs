@@ -10,6 +10,8 @@
     "description": "Egg for Java applications made by srnyx.com\r\n1. Pulls from Git\r\n2. Uses a Gradle\/Maven wrapper to build\r\n3. Runs the application's JAR file",
     "features": null,
     "docker_images": {
+        "Java 26": "ghcr.io\/pelican-eggs\/yolks:java_26",
+        "Java 25": "ghcr.io\/pelican-eggs\/yolks:java_25",
         "Java 22": "ghcr.io\/pelican-eggs\/yolks:java_22",
         "Java 21": "ghcr.io\/pelican-eggs\/yolks:java_21",
         "Java 19": "ghcr.io\/pelican-eggs\/yolks:java_19",

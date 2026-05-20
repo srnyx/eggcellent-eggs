@@ -1,0 +1,142 @@
+{
+    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "exported_at": "2026-05-20T22:22:09+01:00",
+    "name": "Git-Install-Build-Node Application",
+    "author": "srnyx@srnyx.com",
+    "description": "Egg for Node websites made by srnyx.com\r\n1. Pulls from Git\r\n2. Installs dependencies\r\n3. Builds\r\n4. Starts the app",
+    "features": null,
+    "docker_images": {
+        "Node.js 24": "ghcr.io\/parkervcp\/yolks:nodejs_24",
+        "Node.js 23": "ghcr.io\/parkervcp\/yolks:nodejs_23",
+        "Node.js 22": "ghcr.io\/parkervcp\/yolks:nodejs_22",
+        "Node.js 21": "ghcr.io\/parkervcp\/yolks:nodejs_21",
+        "Node.js 20": "ghcr.io\/parkervcp\/yolks:nodejs_20",
+        "Node.js 18": "ghcr.io\/parkervcp\/yolks:nodejs_18",
+        "Node.js 17": "ghcr.io\/parkervcp\/yolks:nodejs_17",
+        "Node.js 16": "ghcr.io\/parkervcp\/yolks:nodejs_16",
+        "Node.js 15": "ghcr.io\/parkervcp\/yolks:nodejs_15",
+        "Node.js 14": "ghcr.io\/parkervcp\/yolks:nodejs_14",
+        "Node.js 12": "ghcr.io\/parkervcp\/yolks:nodejs_12"
+    },
+    "file_denylist": [],
+    "startup": "set -e; export NODE_ENV=production; export HOST=0.0.0.0; export PORT={{SERVER_PORT}}; corepack enable >\/dev\/null 2>&1 || true; if [[ -d .git && \"{{PULL_START}}\" == \"1\" ]]; then ORIGIN_URL=$(git config --get remote.origin.url); ORIGIN_CREDENTIALS=$(echo \"$ORIGIN_URL\" | grep -oP '(?<=\/\/)[^@]+' || echo \"\"); ORIGIN_USERNAME=$(echo \"$ORIGIN_CREDENTIALS\" | cut -d':' -f1 || echo \"\"); ORIGIN_PASSWORD=$(echo \"$ORIGIN_CREDENTIALS\" | cut -d':' -f2 || echo \"\"); if [[ \"$ORIGIN_USERNAME\" == \"$ORIGIN_CREDENTIALS\" ]]; then ORIGIN_USERNAME=\"\"; fi; if [[ \"$ORIGIN_PASSWORD\" == \"$ORIGIN_CREDENTIALS\" ]]; then ORIGIN_PASSWORD=\"\"; fi; if [[ ( \"$ORIGIN_USERNAME\" == \"$ORIGIN_CREDENTIALS\" || \"$ORIGIN_PASSWORD\" == \"$ORIGIN_CREDENTIALS\" ) && ( -n \"{{GIT_USERNAME}}\" || -n \"{{GIT_TOKEN}}\" ) ]]; then echo \"Detected credentials! Inserting them into origin URL...\"; git remote set-url origin \"$(echo \"$ORIGIN_URL\" | sed -E \"s|\/\/|\/\/{{GIT_USERNAME}}:{{GIT_TOKEN}}@|\")\"; else if [[ \"$ORIGIN_USERNAME\" != \"{{GIT_USERNAME}}\" || \"$ORIGIN_PASSWORD\" != \"{{GIT_TOKEN}}\" ]]; then echo \"Detected new credentials! Inserting them into origin URL...\"; git remote set-url origin \"$(echo \"$ORIGIN_URL\" | sed -E \"s|\/\/[^@]+@|\/\/{{GIT_USERNAME}}:{{GIT_TOKEN}}@|\")\"; fi; fi; echo \"Pulling latest from git...\"; GIT_OUTPUT=$(git pull); echo \"$GIT_OUTPUT\"; fi; if [[ ! -d node_modules ]]; then echo \"Installing dependencies with {{PACKAGE_MANAGER}}...\"; {{PACKAGE_MANAGER}} install; fi; if [[ -e \"{{BUILD_SCRIPT}}\" && ( \"{{BUILD_TRIGGER}}\" == \"Always\" || ( \"{{BUILD_TRIGGER}}\" == \"Git changes detected\" && \"$GIT_OUTPUT\" != \"Already up to date.\" ) ) ]]; then echo \"Building application...\"; {{PACKAGE_MANAGER}} run \"{{BUILD_SCRIPT}}\"; fi; echo \"Starting application with '{{PACKAGE_MANAGER}} run {{START_SCRIPT}}'\"; {{PACKAGE_MANAGER}} run \"{{START_SCRIPT}}\";",
+    "config": {
+        "files": "{}",
+        "startup": "{\r\n    \"done\": [\r\n        \"Ready\",\r\n        \"listening on\",\r\n        \"Server listening\",\r\n        \"has finished starting\",\r\n        \"Server running on\"\r\n    ]\r\n}",
+        "logs": "{}",
+        "stop": "^C"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!\/bin\/bash\r\nset -eu\r\n\r\n# Install dependencies\r\napt update\r\napt install -y git curl jq file unzip make gcc g++ libtool\r\n\r\n# Make server files directory (\/mnt\/server)\r\nmkdir -p \/mnt\/server\r\ncd \/mnt\/server || exit\r\n\r\n# Skip cloning\/pulling if disabled\r\nif [ \"${CLONE_INSTALL:-1}\" = \"0\" ]; then\r\n  echo -e \"Assuming user knows what they are doing, have a good day\"\r\n  exit 0\r\nfi\r\n\r\n# Add git ending if it's not on the address\r\nif [[ \"${GIT_ADDRESS}\" != *.git ]]; then\r\n  GIT_ADDRESS=\"${GIT_ADDRESS}.git\"\r\nfi\r\n\r\n# Check for username and password (PAT)\r\nif [[ -z \"${GIT_USERNAME:-}\" && -z \"${GIT_TOKEN:-}\" ]]; then\r\n  echo \"Using anonymous API call (no username\/password)\"\r\nelse\r\n  GIT_ADDRESS=\"https:\/\/${GIT_USERNAME}:${GIT_TOKEN}@$(echo -e \"${GIT_ADDRESS}\" | cut -d\/ -f3-)\"\r\nfi\r\n\r\n# Trust \/mnt\/server for git operations if not already trusted\r\nif ! git config --global --get-all safe.directory | grep -qx \"\/mnt\/server\"; then\r\n  git config --global --add safe.directory \/mnt\/server\r\nfi\r\n\r\nif [ \"$(ls -A \/mnt\/server)\" ]; then\r\n  echo \"\/mnt\/server directory is NOT empty; checking for git files\"\r\n\r\n  # Check .git config\r\n  if [ -d .git ]; then\r\n    echo \".git directory exists\"\r\n    if [ -f .git\/config ]; then\r\n      echo \"Loading info from git config\"\r\n      ORIGIN=$(git config --get remote.origin.url)\r\n      CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)\r\n    else\r\n      echo \"Files found with no git config; closing out without touching things to not break anything\"\r\n      exit 10\r\n    fi\r\n  fi\r\n\r\n  # Check branches\r\n  echo \"Current branch is ${CURRENT_BRANCH} while the target branch is ${GIT_BRANCH:-DEFAULT}\"\r\n  if [ -n \"${GIT_BRANCH:-}\" ] && [ \"${CURRENT_BRANCH}\" != \"${GIT_BRANCH}\" ]; then\r\n    echo \"Switching from ${CURRENT_BRANCH} to ${GIT_BRANCH}\"\r\n    git fetch origin\r\n    \r\n    # Switch or create branch and ensure it tracks the remote\r\n    git switch -C \"${GIT_BRANCH}\" \"origin\/${GIT_BRANCH}\"\r\n    git reset --hard \"origin\/${GIT_BRANCH}\"\r\n    \r\n    # Set upstream so future git pull works without extra flags\r\n    git branch --set-upstream-to=\"origin\/${GIT_BRANCH}\" \"${GIT_BRANCH}\" 2>\/dev\/null || true\r\n  elif [ \"${ORIGIN}\" = \"${GIT_ADDRESS}\" ]; then\r\n    echo \"Pulling latest from git\"\r\n    git pull\r\n  fi\r\nelse\r\n  echo \"\/mnt\/server IS empty; cloning files from repository\"\r\n\r\n  # Clone from git\r\n  if [ -z \"${GIT_BRANCH:-}\" ]; then\r\n    echo \"Cloning default branch\"\r\n    git clone \"${GIT_ADDRESS}\" .\r\n  else\r\n    echo \"Cloning ${GIT_BRANCH}\"\r\n    git clone --branch \"${GIT_BRANCH}\" \"${GIT_ADDRESS}\" .\r\n  fi\r\nfi\r\n\r\necho \"Installation complete\"\r\nexit 0",
+            "container": "node:20-bookworm-slim",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Build Trigger",
+            "description": "When should the application be rebuilt on startup?",
+            "env_variable": "BUILD_TRIGGER",
+            "default_value": "Git changes detected",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|in:Never,Git changes detected,Always",
+            "field_type": "text"
+        },
+        {
+            "name": "Package Manager",
+            "description": "The package manager used to install dependencies and run scripts",
+            "env_variable": "PACKAGE_MANAGER",
+            "default_value": "pnpm",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Build Script",
+            "description": "The build script to run with package manager. Leave empty to never try building",
+            "env_variable": "BUILD_SCRIPT",
+            "default_value": "build",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Start Script",
+            "description": "The start script to run with package manager",
+            "env_variable": "START_SCRIPT",
+            "default_value": "start",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Clone On Install",
+            "description": "Whether to clone the repository on install or not",
+            "env_variable": "CLONE_INSTALL",
+            "default_value": "1",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean",
+            "field_type": "text"
+        },
+        {
+            "name": "Pull On Start",
+            "description": "Pull the latest files from git on startup",
+            "env_variable": "PULL_START",
+            "default_value": "1",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean",
+            "field_type": "text"
+        },
+        {
+            "name": "Git Repo Address",
+            "description": "Git repository to clone\/pull (example: https:\/\/github.com\/srnyx\/srnyx-bot)",
+            "env_variable": "GIT_ADDRESS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Git Repo Branch",
+            "description": "The branch of the application to install from git. Leave empty for default",
+            "env_variable": "GIT_BRANCH",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Git Username",
+            "description": "Username to auth with git",
+            "env_variable": "GIT_USERNAME",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Git Access Token",
+            "description": "Access token to use with git (https:\/\/github.com\/settings\/tokens or https:\/\/gitlab.com\/-\/profile\/personal_access_tokens)",
+            "env_variable": "GIT_TOKEN",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        }
+    ]
+}

@@ -1,0 +1,81 @@
+#!/bin/bash
+set -eu
+
+# Install dependencies
+apt update
+apt install -y git curl jq file unzip make gcc g++ libtool
+
+# Make server files directory (/mnt/server)
+mkdir -p /mnt/server
+cd /mnt/server || exit
+
+# Skip cloning/pulling if disabled
+if [ "${CLONE_INSTALL:-1}" = "0" ]; then
+  echo -e "Assuming user knows what they are doing, have a good day"
+  exit 0
+fi
+
+# Add git ending if it's not on the address
+if [[ "${GIT_ADDRESS}" != *.git ]]; then
+  GIT_ADDRESS="${GIT_ADDRESS}.git"
+fi
+
+# Check for username and password (PAT)
+if [[ -z "${GIT_USERNAME:-}" && -z "${GIT_TOKEN:-}" ]]; then
+  echo "Using anonymous API call (no username/password)"
+else
+  GIT_ADDRESS="https://${GIT_USERNAME}:${GIT_TOKEN}@$(echo -e "${GIT_ADDRESS}" | cut -d/ -f3-)"
+fi
+
+# Trust /mnt/server for git operations if not already trusted
+if ! git config --global --get-all safe.directory | grep -qx "/mnt/server"; then
+  git config --global --add safe.directory /mnt/server
+fi
+
+if [ "$(ls -A /mnt/server)" ]; then
+  echo "/mnt/server directory is NOT empty; checking for git files"
+
+  # Check .git config
+  if [ -d .git ]; then
+    echo ".git directory exists"
+    if [ -f .git/config ]; then
+      echo "Loading info from git config"
+      ORIGIN=$(git config --get remote.origin.url)
+      CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+    else
+      echo "Files found with no git config; closing out without touching things to not break anything"
+      exit 10
+    fi
+  fi
+
+  # Check branches
+  echo "Current branch is ${CURRENT_BRANCH} while the target branch is ${GIT_BRANCH:-DEFAULT}"
+  if [ -n "${GIT_BRANCH:-}" ] && [ "${CURRENT_BRANCH}" != "${GIT_BRANCH}" ]; then
+    echo "Switching from ${CURRENT_BRANCH} to ${GIT_BRANCH}"
+    git fetch origin
+    
+    # Switch or create branch and ensure it tracks the remote
+    git switch -C "${GIT_BRANCH}" "origin/${GIT_BRANCH}"
+    git reset --hard "origin/${GIT_BRANCH}"
+    
+    # Set upstream so future git pull works without extra flags
+    git branch --set-upstream-to="origin/${GIT_BRANCH}" "${GIT_BRANCH}" 2>/dev/null || true
+  elif [ "${ORIGIN}" = "${GIT_ADDRESS}" ]; then
+    echo "Pulling latest from git"
+    git pull
+  fi
+else
+  echo "/mnt/server IS empty; cloning files from repository"
+
+  # Clone from git
+  if [ -z "${GIT_BRANCH:-}" ]; then
+    echo "Cloning default branch"
+    git clone "${GIT_ADDRESS}" .
+  else
+    echo "Cloning ${GIT_BRANCH}"
+    git clone --branch "${GIT_BRANCH}" "${GIT_ADDRESS}" .
+  fi
+fi
+
+echo "Installation complete"
+exit 0

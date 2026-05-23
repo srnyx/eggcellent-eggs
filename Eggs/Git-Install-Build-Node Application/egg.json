@@ -4,7 +4,7 @@
         "version": "PTDL_v2",
         "update_url": null
     },
-    "exported_at": "2026-05-20T22:22:09+01:00",
+    "exported_at": "2026-05-23T04:51:08+01:00",
     "name": "Git-Install-Build-Node Application",
     "author": "srnyx@srnyx.com",
     "description": "Egg for Node websites made by srnyx.com\r\n1. Pulls from Git\r\n2. Installs dependencies\r\n3. Builds\r\n4. Starts the app",
@@ -26,7 +26,7 @@
     "startup": "set -e; export NODE_ENV=production; export HOST=0.0.0.0; export CI=true; export PORT={{SERVER_PORT}}; corepack enable >\/dev\/null 2>&1 || true; if [[ -d .git && \"{{PULL_START}}\" == \"1\" ]]; then ORIGIN_URL=$(git config --get remote.origin.url); ORIGIN_CREDENTIALS=$(echo \"$ORIGIN_URL\" | grep -oP '(?<=\/\/)[^@]+' || echo \"\"); ORIGIN_USERNAME=$(echo \"$ORIGIN_CREDENTIALS\" | cut -d':' -f1 || echo \"\"); ORIGIN_PASSWORD=$(echo \"$ORIGIN_CREDENTIALS\" | cut -d':' -f2 || echo \"\"); if [[ \"$ORIGIN_USERNAME\" == \"$ORIGIN_CREDENTIALS\" ]]; then ORIGIN_USERNAME=\"\"; fi; if [[ \"$ORIGIN_PASSWORD\" == \"$ORIGIN_CREDENTIALS\" ]]; then ORIGIN_PASSWORD=\"\"; fi; if [[ ( \"$ORIGIN_USERNAME\" == \"$ORIGIN_CREDENTIALS\" || \"$ORIGIN_PASSWORD\" == \"$ORIGIN_CREDENTIALS\" ) && ( -n \"{{GIT_USERNAME}}\" || -n \"{{GIT_TOKEN}}\" ) ]]; then echo \"Detected credentials! Inserting them into origin URL...\"; git remote set-url origin \"$(echo \"$ORIGIN_URL\" | sed -E \"s|\/\/|\/\/{{GIT_USERNAME}}:{{GIT_TOKEN}}@|\")\"; else if [[ \"$ORIGIN_USERNAME\" != \"{{GIT_USERNAME}}\" || \"$ORIGIN_PASSWORD\" != \"{{GIT_TOKEN}}\" ]]; then echo \"Detected new credentials! Inserting them into origin URL...\"; git remote set-url origin \"$(echo \"$ORIGIN_URL\" | sed -E \"s|\/\/[^@]+@|\/\/{{GIT_USERNAME}}:{{GIT_TOKEN}}@|\")\"; fi; fi; echo \"Pulling latest from git...\"; GIT_OUTPUT=$(git pull); echo \"$GIT_OUTPUT\"; fi; if [[ ! -d node_modules ]]; then echo \"Installing dependencies with {{PACKAGE_MANAGER}}...\"; {{PACKAGE_MANAGER}} install; fi; if [[ -n \"{{BUILD_SCRIPT}}\" && ( \"{{BUILD_TRIGGER}}\" == \"Always\" || ( \"{{BUILD_TRIGGER}}\" == \"Git changes detected\" && \"$GIT_OUTPUT\" != \"Already up to date.\" ) ) ]]; then echo \"Building application...\"; {{PACKAGE_MANAGER}} run \"{{BUILD_SCRIPT}}\"; fi; echo \"Starting application with '{{PACKAGE_MANAGER}} run {{START_SCRIPT}}'\"; {{PACKAGE_MANAGER}} run \"{{START_SCRIPT}}\";",
     "config": {
         "files": "{}",
-        "startup": "{\r\n    \"done\": [\r\n        \"Ready\",\r\n        \"listening on\",\r\n        \"Server listening\",\r\n        \"has finished starting\",\r\n        \"Server running on\"\r\n    ]\r\n}",
+        "startup": "{\r\n    \"done\": [\r\n        \"Ready\",\r\n        \"listening on\",\r\n        \"Server listening\",\r\n        \"has finished starting\",\r\n        \"Server running on\",\r\n        \"Website running on\"\r\n    ]\r\n}",
         "logs": "{}",
         "stop": "^C"
     },

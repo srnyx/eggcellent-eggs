@@ -1,0 +1,60 @@
+{
+    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "exported_at": "2026-07-13T22:49:04+01:00",
+    "name": "Update-Java Application",
+    "author": "srnyx@srnyx.com",
+    "description": "Egg for Java applications made by srnyx.com\r\nRuns a Java application's JAR file",
+    "features": [],
+    "docker_images": {
+        "Java 26": "ghcr.io\/pelican-eggs\/yolks:java_26",
+        "Java 25": "ghcr.io\/pelican-eggs\/yolks:java_25",
+        "Java 22": "ghcr.io\/pelican-eggs\/yolks:java_22",
+        "Java 21": "ghcr.io\/pelican-eggs\/yolks:java_21",
+        "Java 19": "ghcr.io\/pelican-eggs\/yolks:java_19",
+        "Java 17": "ghcr.io\/pelican-eggs\/yolks:java_17",
+        "Java 16": "ghcr.io\/pelican-eggs\/yolks:java_16",
+        "Java 11": "ghcr.io\/pelican-eggs\/yolks:java_11",
+        "Java 8": "ghcr.io\/pelican-eggs\/yolks:java_8"
+    },
+    "file_denylist": [],
+    "startup": "if [[ -d \"{{JAR_UPDATE_DIR}}\" ]]; then NEW=$(find \"{{JAR_UPDATE_DIR}}\" -name \"*.jar\" -print -quit); if [[ -f \"$NEW\" ]]; then echo \"Updating JAR from $NEW\"; mkdir -p \"$(dirname \"{{JAR_FILE}}\")\"; mv -f \"$NEW\" \"{{JAR_FILE}}\"; rm -f \"$NEW\"; fi; fi; if [[ ! -f \"{{JAR_FILE}}\" ]]; then echo -e \"\\e[31mJAR file {{JAR_FILE}} not found!\"; exit 1; fi; echo \"Running JAR {{JAR_FILE}}\"; exec java -Xms128M -Xmx{{SERVER_MEMORY}}M -Dterminal.jline=false -Dterminal.ansi=true -jar \"{{JAR_FILE}}\";",
+    "config": {
+        "files": "{}",
+        "startup": "{\r\n    \"done\": [\r\n        \"has finished starting\"\r\n    ]\r\n}",
+        "logs": "{}",
+        "stop": "stop"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!\/bin\/bash",
+            "container": "node:20-bookworm-slim",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "JAR File",
+            "description": "The file that starts the application (example: Application.jar).",
+            "env_variable": "JAR_FILE",
+            "default_value": "Application.jar",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string",
+            "field_type": "text"
+        },
+        {
+            "name": "JAR Update Directory",
+            "description": "The directory that contains the JAR file to replace\/update the main file.",
+            "env_variable": "JAR_UPDATE_DIR",
+            "default_value": "update",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string",
+            "field_type": "text"
+        }
+    ]
+}
